@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import os
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from sklearn.utils.class_weight import compute_class_weight
 import time
 
 from model_resnet import create_resnet50_model, compile_model as compile_resnet, unfreeze_and_fine_tune as finetune_resnet
@@ -36,43 +37,59 @@ class OptimizedTrainer:
         print(f"✓ Loaded!")
         print(f"  Train: {len(self.X_train)}, Val: {len(self.X_val)}, Test: {len(self.X_test)}")
         print(f"  Classes: {self.num_classes}")
-        
-        # Data augmentation
+
+        # Compute class weights to handle imbalanced classes
+        y_train_labels = np.argmax(self.y_train, axis=1)
+        class_weights = compute_class_weight(
+            class_weight='balanced',
+            classes=np.unique(y_train_labels),
+            y=y_train_labels
+        )
+        self.class_weight = dict(enumerate(class_weights))
+        print(f"  Class weights: {[f'{w:.2f}' for w in class_weights]}")
+
+        # Enhanced data augmentation for small dataset
         self.datagen = ImageDataGenerator(
-            rotation_range=15,
-            width_shift_range=0.15,
-            height_shift_range=0.15,
+            rotation_range=20,
+            width_shift_range=0.2,
+            height_shift_range=0.2,
             horizontal_flip=True,
-            zoom_range=0.1,
+            zoom_range=0.15,
+            brightness_range=[0.8, 1.2],
+            shear_range=0.1,
             fill_mode='nearest'
         )
         
     def create_model(self):
         print(f"\nCreating {self.model_name}...")
-        
+
         input_shape = self.X_train.shape[1:]
-        
+
+        # Higher learning rate for frozen base model training (Phase 1)
+        initial_lr = 0.001
+
         if self.model_name == 'resnet50':
             self.model, self.base_model = create_resnet50_model(input_shape, self.num_classes)
-            self.model = compile_resnet(self.model, learning_rate=0.0005)  # Lower LR
+            self.model = compile_resnet(self.model, learning_rate=initial_lr)
         elif self.model_name == 'inceptionv3':
             self.model, self.base_model = create_inceptionv3_model(input_shape, self.num_classes)
-            self.model = compile_inception(self.model, learning_rate=0.0005)
+            self.model = compile_inception(self.model, learning_rate=initial_lr)
         elif self.model_name == 'efficientnetb0':
             self.model, self.base_model = create_efficientnet_model(input_shape, self.num_classes)
-            self.model = compile_efficientnet(self.model, learning_rate=0.0005)
-        
+            self.model = compile_efficientnet(self.model, learning_rate=initial_lr)
+
         print(f"✓ Created! Parameters: {self.model.count_params():,}")
         
-    def train_initial(self, epochs=50, batch_size=16):
+    def train_initial(self, epochs=50, batch_size=32):
         print(f"\n{'='*60}")
-        print(f"PHASE 1: Initial Training")
+        print(f"PHASE 1: Initial Training (Frozen Base)")
         print(f"  Epochs: {epochs}, Batch: {batch_size}")
+        print(f"  Using class weights to handle imbalance")
         print(f"{'='*60}\n")
-        
+
         callbacks = [
             ModelCheckpoint(
-                f'models/{self.model_name}/{self.model_name}_initial_best.h5',
+                f'models/{self.model_name}/{self.model_name}_initial_best.keras',
                 monitor='val_accuracy',
                 save_best_only=True,
                 mode='max',
@@ -80,7 +97,7 @@ class OptimizedTrainer:
             ),
             EarlyStopping(
                 monitor='val_accuracy',
-                patience=20,
+                patience=15,
                 restore_best_weights=True,
                 mode='max',
                 verbose=1
@@ -88,44 +105,49 @@ class OptimizedTrainer:
             ReduceLROnPlateau(
                 monitor='val_loss',
                 factor=0.5,
-                patience=8,
+                patience=5,
                 min_lr=1e-7,
                 verbose=1
             )
         ]
-        
+
         start = time.time()
-        
+
         history = self.model.fit(
             self.datagen.flow(self.X_train, self.y_train, batch_size=batch_size),
             validation_data=(self.X_val, self.y_val),
             epochs=epochs,
             steps_per_epoch=len(self.X_train) // batch_size,
             callbacks=callbacks,
-            verbose=2  # Less verbose output
+            class_weight=self.class_weight,
+            verbose=2
         )
-        
+
         elapsed = (time.time() - start) / 60
         print(f"\n✓ Phase 1 done in {elapsed:.1f} min")
-        
+
         return history
     
-    def train_finetune(self, epochs=50, batch_size=8):
+    def train_finetune(self, epochs=50, batch_size=16):
         print(f"\n{'='*60}")
-        print(f"PHASE 2: Fine-Tuning")
+        print(f"PHASE 2: Fine-Tuning (Unfrozen Layers)")
         print(f"  Epochs: {epochs}, Batch: {batch_size}")
+        print(f"  Using class weights to handle imbalance")
         print(f"{'='*60}\n")
-        
+
+        # Lower learning rate for fine-tuning
+        finetune_lr = 0.0001
+
         if self.model_name == 'resnet50':
-            self.model = finetune_resnet(self.model, self.base_model, learning_rate=0.00005)
+            self.model = finetune_resnet(self.model, self.base_model, learning_rate=finetune_lr)
         elif self.model_name == 'inceptionv3':
-            self.model = finetune_inception(self.model, self.base_model, learning_rate=0.00005)
+            self.model = finetune_inception(self.model, self.base_model, learning_rate=finetune_lr)
         elif self.model_name == 'efficientnetb0':
-            self.model = finetune_efficientnet(self.model, self.base_model, learning_rate=0.00005)
-        
+            self.model = finetune_efficientnet(self.model, self.base_model, learning_rate=finetune_lr)
+
         callbacks = [
             ModelCheckpoint(
-                f'models/{self.model_name}/{self.model_name}_finetune_best.h5',
+                f'models/{self.model_name}/{self.model_name}_finetune_best.keras',
                 monitor='val_accuracy',
                 save_best_only=True,
                 mode='max',
@@ -133,7 +155,7 @@ class OptimizedTrainer:
             ),
             EarlyStopping(
                 monitor='val_accuracy',
-                patience=20,
+                patience=15,
                 restore_best_weights=True,
                 mode='max',
                 verbose=1
@@ -141,26 +163,27 @@ class OptimizedTrainer:
             ReduceLROnPlateau(
                 monitor='val_loss',
                 factor=0.5,
-                patience=8,
+                patience=5,
                 min_lr=1e-8,
                 verbose=1
             )
         ]
-        
+
         start = time.time()
-        
+
         history = self.model.fit(
             self.datagen.flow(self.X_train, self.y_train, batch_size=batch_size),
             validation_data=(self.X_val, self.y_val),
             epochs=epochs,
             steps_per_epoch=len(self.X_train) // batch_size,
             callbacks=callbacks,
+            class_weight=self.class_weight,
             verbose=2
         )
-        
+
         elapsed = (time.time() - start) / 60
         print(f"\n✓ Phase 2 done in {elapsed:.1f} min")
-        
+
         return history
     
     def plot_and_save(self, history1, history2):
@@ -196,7 +219,7 @@ class OptimizedTrainer:
         plt.savefig(f'docs/results/{self.model_name}_training_history.png', dpi=300)
         plt.close()
         
-        self.model.save(f'models/{self.model_name}/{self.model_name}_final.h5')
+        self.model.save(f'models/{self.model_name}/{self.model_name}_final.keras')
         
         print(f"\n✓ Model saved!")
         print(f"  Final val accuracy: {val_acc[-1]:.4f} ({val_acc[-1]*100:.2f}%)")

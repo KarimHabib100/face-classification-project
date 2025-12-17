@@ -54,21 +54,23 @@ class DataPreprocessor:
         print("\n" + "="*60)
         print("PREPROCESSING")
         print("="*60)
-        print(f"\nResizing to {self.resize} and normalizing...")
-        
+        print(f"\nResizing to {self.resize}...")
+        print("NOTE: Images kept in [0, 255] range for model preprocess_input")
+
         processed_images = []
-        
+
         for i, img in enumerate(X):
             if (i + 1) % 100 == 0:
                 print(f"  {i+1}/{len(X)} images processed ({(i+1)/len(X)*100:.1f}%)", end='\r')
-            
+
+            # Convert to uint8 if needed
             if img.dtype != np.uint8:
                 img = (img * 255).astype(np.uint8)
-            
+
             img_resized = cv2.resize(img, self.resize)
-            img_normalized = img_resized.astype('float32') / 255.0
-            processed_images.append(img_normalized)
-        
+            # Keep as float32 in [0, 255] range - model's preprocess_input will handle normalization
+            processed_images.append(img_resized.astype('float32'))
+
         print(f"\n✓ All images preprocessed!")
         return np.array(processed_images)
     
