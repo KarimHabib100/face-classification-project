@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.Python
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Data files (too large for GitHub)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*.pkl
+data/processed/*.npy
+
+# Model files (too large for GitHub)
+models/**/*.h5
+models/**/*.keras
+!models/*/.gitkeep
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints
+
+# Temporary
+*.tmp
+*.temp
+.cache/

@@ -1,0 +1,24 @@
+============================================================
+EVALUATION REPORT: EFFICIENTNETB0
+============================================================
+
+Accuracy: 0.4109 (41.09%)
+Top-3 Accuracy: 0.7054 (70.54%)
+
+============================================================
+DETAILED CLASSIFICATION REPORT:
+============================================================
+
+                   precision    recall  f1-score   support
+
+     Ariel Sharon       0.00      0.00      0.00        16
+     Colin Powell       0.00      0.00      0.00        47
+  Donald Rumsfeld       0.00      0.00      0.00        24
+    George W Bush       0.41      1.00      0.58       106
+Gerhard Schroeder       0.00      0.00      0.00        22
+      Hugo Chavez       0.00      0.00      0.00        14
+       Tony Blair       0.00      0.00      0.00        29
+
+         accuracy                           0.41       258
+        macro avg       0.06      0.14      0.08       258
+     weighted avg       0.17      0.41      0.24       258
