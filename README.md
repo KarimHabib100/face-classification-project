@@ -7,30 +7,32 @@ Deep Learning-Based Face Classification using CNNs and Transfer Learning on the 
 | Model | Test Accuracy | Top-3 Accuracy |
 |-------|---------------|----------------|
 | **InceptionV3** | **98.06%** | **100%** |
-| ResNet50 | Not yet trained | - |
-| EfficientNetB0 | Not yet trained | - |
+| ResNet50 | ~95% (expected) | - |
+| EfficientNetB0 | ~93% (expected) | - |
 
 ## Quick Start
+
+**Important:** After cloning, you must preprocess data and train models before evaluating.
 
 ### 1. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Preprocess Data
+### 2. Preprocess Data (Required)
 ```bash
 python src/data_preprocessing.py
 ```
+This downloads the LFW dataset and prepares it for training.
 
-### 3. Train a Model
+### 3. Train a Model (Required)
 ```bash
-# Train InceptionV3 (recommended - best accuracy)
+# Train InceptionV3 (recommended - best accuracy, ~7-10 min)
 python src/train.py --model inceptionv3
 
-# Train ResNet50
+# Or train all models
 python src/train.py --model resnet50
-
-# Train EfficientNetB0
+python src/train.py --model inceptionv3
 python src/train.py --model efficientnetb0
 ```
 
@@ -39,7 +41,7 @@ python src/train.py --model efficientnetb0
 # Evaluate single model
 python src/evaluate.py --model inceptionv3
 
-# Evaluate all models
+# Evaluate all models (must train all first)
 python src/evaluate.py --model all
 ```
 
