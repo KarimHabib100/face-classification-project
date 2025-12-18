@@ -29,16 +29,16 @@ class ModelEvaluator:
         print(f"✓ Test data loaded: {len(self.X_test)} samples, {len(self.class_names)} classes")
         
     def load_model(self):
-        # Try native Keras format first, then fallback to H5
-        model_path_keras = f'models/{self.model_name}/{self.model_name}_final.keras'
+        # Try H5 format first (better compatibility), then native Keras format
         model_path_h5 = f'models/{self.model_name}/{self.model_name}_final.h5'
+        model_path_keras = f'models/{self.model_name}/{self.model_name}_final.keras'
 
-        if os.path.exists(model_path_keras):
-            model_path = model_path_keras
-        elif os.path.exists(model_path_h5):
+        if os.path.exists(model_path_h5):
             model_path = model_path_h5
+        elif os.path.exists(model_path_keras):
+            model_path = model_path_keras
         else:
-            raise FileNotFoundError(f"No model found at {model_path_keras} or {model_path_h5}")
+            raise FileNotFoundError(f"No model found at {model_path_h5} or {model_path_keras}")
 
         print(f"\nLoading model from {model_path}...")
 

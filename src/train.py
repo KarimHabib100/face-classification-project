@@ -89,7 +89,7 @@ class OptimizedTrainer:
 
         callbacks = [
             ModelCheckpoint(
-                f'models/{self.model_name}/{self.model_name}_initial_best.keras',
+                f'models/{self.model_name}/{self.model_name}_initial_best.h5',
                 monitor='val_accuracy',
                 save_best_only=True,
                 mode='max',
@@ -147,7 +147,7 @@ class OptimizedTrainer:
 
         callbacks = [
             ModelCheckpoint(
-                f'models/{self.model_name}/{self.model_name}_finetune_best.keras',
+                f'models/{self.model_name}/{self.model_name}_finetune_best.h5',
                 monitor='val_accuracy',
                 save_best_only=True,
                 mode='max',
@@ -219,7 +219,7 @@ class OptimizedTrainer:
         plt.savefig(f'docs/results/{self.model_name}_training_history.png', dpi=300)
         plt.close()
         
-        self.model.save(f'models/{self.model_name}/{self.model_name}_final.keras')
+        self.model.save(f'models/{self.model_name}/{self.model_name}_final.h5')
         
         print(f"\n✓ Model saved!")
         print(f"  Final val accuracy: {val_acc[-1]:.4f} ({val_acc[-1]*100:.2f}%)")
