@@ -53,15 +53,16 @@ def load_class_names():
         st.error(f"Error loading class names: {e}")
         return None
 
-def preprocess_image(image, target_size=(128, 128)):
+def preprocess_image(image, target_size=(160, 160)):
     if len(image.shape) == 2:
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
     elif image.shape[2] == 4:
         image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
-    
+
     image_resized = cv2.resize(image, target_size)
-    image_normalized = image_resized.astype('float32') / 255.0
-    
+    # Keep in [0, 255] range - model's preprocess_input handles normalization
+    image_normalized = image_resized.astype('float32')
+
     return image_normalized, image_resized
 
 def predict_image(model, image):
